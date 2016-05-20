@@ -21,6 +21,9 @@ var RAN;
 //NRAN:number of random numbers used(使用済みの乱数の数),IX:乱数の生成に使用する
 var NRAN, IX ;
 
+
+
+
 function draw(){
 
     RX = new Array();
@@ -64,7 +67,7 @@ function draw(){
     n = 36;
     
     //分子の面積分率(0.3で気相、0.5で液層、0.7で固層)
-    vdens  = 0.7;
+    vdens  = 0.5;
 
     //系の設定温度,T
     temp   = 5.0;
@@ -91,7 +94,7 @@ function draw(){
     console.log('RAN[]の要素数=%d',RAN.length);
 
     for (onoi = 1; onoi<=100; onoi ++) {
-      console.log('RAN[%d]の中身 = %f \n',onoi,RAN[onoi]);
+      //console.log('RAN[%d]の中身 = %f \n',onoi,RAN[onoi]);
     }
     NRAN   = 1 ;
 
@@ -114,10 +117,90 @@ function draw(){
   // set initial velocities (初期速度の設定)
   inivel( n, temp ) ;
 
-    //各々の分子の初期速度
-    for (onoi = 1; onoi<=n; onoi ++) {
-      console.log('%d個目の初期速度:VX:%lf VY=%lf \n',onoi,VX[onoi],VY[onoi]);
+  //各々の分子の初期速度
+  for (onoi = 1; onoi<=n; onoi ++) {
+    //console.log('%d個目の初期速度:VX:%lf VY=%lf \n',onoi,VX[onoi],VY[onoi]);
+  }
+
+
+  //scale velocities(系の分子数が合うようにスケーリングする)
+  scalevel( n, temp ) ;
+
+
+  // cal collision time for each moledcule(衝突するまでの時間を求める)
+  for( i=1 ; i<=n ; i++ ) {
+    collist( n, dsq, i, coltim, partnr ) ;
+  }
+
+
+  /*--- initialization ---*/
+  tim   = 0. ; nbump = 0  ;
+
+
+    
+    /*----------------------------------------------------------------*/
+    /*----------------------    equilibration   ----------------------*/
+    /*----------------------------------------------------------------*/
+    
+    for ( ncol=1 ; ncol<=ncolmx ; ncol++ ) {
+        
+        /*--- locate minimum collision time ---*/
+        tij = timbig ;
+        
+        for (onoi = 1; onoi <= coltim.length; onoi++) {
+            console.log("coltim[%d]の中身=%lf ",onoi,coltim[onoi]);
+        }
+
+        for ( k=1 ; k<=n ; k++ ) {
+            if ( coltim[k] < tij ) {
+                tij = coltim[k] ;
+                i   = k ;
+            }
+        }
+        /*--- coll. for i and j ---*/
+        tstep  = tij ;
+        j      = partnr[i] ;
+        tim   += tstep ;
+        nbump +=  1 ;
+        /*--- advance particle position ---*/
+        for ( k=1 ; k<=n ; k++ ) {
+            coltim[k] += - tstep ;
+            RX[k]     += VX[k]*tstep ;
+            RY[k]     += VY[k]*tstep ;
+            RX[k]     += - ( RX[k]/XL - 0.5 )*XL ;
+            RY[k]     += - ( RY[k]/YL - 0.5 )*YL ;
+        }
+        /*--- compute coll. dynamics ---*/
+        bump( d, i, j ) ;
+        /*---  for those mol. whose pointers ---*/
+        /*---     are i-th or j-th mol.      ---*/
+        collist( n, dsq, i, coltim, partnr ) ;
+        collist( n, dsq, j, coltim, partnr ) ;
+        for( k=1 ; k<=n ; k++ ) {
+            if( (partnr[k] == i) || (partnr[k] == j) )
+                collist( n, dsq, k, coltim, partnr ) ;
+        }
+        /*--- for data output ---*/
+
+        for( k=1 ; k<=n ; k++ ) {
+            var rxNcolAry = new Array();
+            var ryNcolAry = new Array();
+            rxNcolAry[ncol] = RX[k];
+            rx0[k] = rxNcolAry[ncol] ;
+            ryNcolAry[ncol] = RX[k];
+            rx0[k] = ryNcolAry[ncol] ;
+            //console.log("あれ:X:%lf Y=%lf ",RX[k],RY[k]);
+            //rx0[k][ncol] = RX[k] ;
+            //ry0[k][ncol] = RY[k] ;
+            
+            if (k == 3) {
+                console.log("3個目の分子の軌跡:X:%lf Y=%lf ",RX[k],RY[k]);
+            }
+            
+        }
     }
+
+
 
         var canvas = document.getElementById('tutorial');
         if (canvas.getContext){
@@ -139,6 +222,53 @@ function draw(){
             ctx.fill();
         }
 }
+
+
+
+/*+++ fun scalevel +++*/
+function scalevel(n, temp ){
+    var  vxi, vyi, velx, vely, tx, ty, t ;
+    var  c1 ;
+    var     i;
+    /*--- zero total momentum ---*/
+    velx = 0. ;  vely = 0. ;
+    for( i=1 ; i<=n ; i++ ) {
+        vxi   = VX[i] ;
+        vyi   = VY[i] ;
+        velx += vxi ;
+        vely += vyi ;
+    }
+    velx = velx/n ;
+    vely = vely/n ;
+    
+    for( i=1 ; i<=n ; i++ ) {
+        VX[i] += - velx ;
+        VY[i] += - vely ;
+    }
+    /*--- correct velocities to satisfy ---*/
+    /*-   specified temperature           -*/
+    tx = 0. ; ty = 0. ;
+    for ( i=1 ; i<=n ; i++ ) {
+        vxi  = VX[i] ;
+        vyi  = VY[i] ;
+        tx += vxi*vxi ;
+        ty += vyi*vyi ;
+    }
+    tx = tx/n ;
+    ty = ty/n ;
+    
+    t = ( tx + ty )/2. ;
+    
+    c1 = Math.sqrt( temp/t) ;
+    
+    for ( i=1 ; i<=n ; i++ ) {
+        vxi   = VX[i] ;
+        vyi   = VY[i] ;
+        VX[i] *= c1 ;
+        VX[i] *= c1 ;
+    }
+}
+
 
 
 //functions
@@ -227,6 +357,75 @@ function inivel(n, temp ){
     }
 }
 
+
+
+/*+++ fun collist +++*/
+function collist(n, dsq, i, coltim, partnr ){
+    var  rxi, ryi, rxij, ryij ;
+    var  vxi, vyi, vxij, vyij ;
+    var  rijsq, vijsq, bij, tij, discr ;
+    var  timbig ;
+    var     j ;
+    
+    timbig=10000000000 ;
+    
+    console.log("渡された値,n=%f, dsp=%f,i=%f",n,dsq,i);
+
+    coltim[i] = timbig ;  partnr[i] = n ;
+    rxi = RX[i] ; ryi = RY[i] ;
+    vxi = VX[i] ; vyi = VY[i] ;
+    
+    for ( j=1 ; j<=n ; j++ ) {
+
+        if ( j == i )  continue ;
+        rxij = rxi - RX[j] ;
+        ryij = ryi - RY[j] ;
+        rxij = rxij - (rxij/XL)*XL ;
+        ryij = rxij - (ryij/YL)*YL ;
+        vxij = vxi - VX[j] ;
+        vyij = vyi - VY[j] ;
+        bij  = rxij*vxij + ryij*vyij ;
+        
+        if( bij < 0 ) {
+            rijsq = rxij*rxij + ryij*ryij ;
+            vijsq = vxij*vxij + vyij*vyij ;
+            discr = bij*bij - vijsq*( rijsq-dsq ) ;
+            if( discr > 0 ) {
+                tij = (-bij - Math.sqrt(discr) )/vijsq ;
+                if( tij < coltim[i] ) {
+                    coltim[i] = tij ;
+                    partnr[i] = j ;
+                }
+            }
+        }
+        coltim[j] = j ;
+        partnr[j] = j ;
+    }
+}
+
+
+/*+++ fun bump +++*/
+function bump( d, i, j ){
+    var  rxij , ryij , vxij , vyij , rij , factor ;
+    var  cx   , cy ;
+    
+    rxij  = RX[i] - RX[j] ;
+    ryij  = RY[i] - RY[j] ;
+    rxij += -( rxij/XL)*XL ;
+    ryij += -( ryij/YL)*YL ;
+    rij   = Math.sqrt( rxij*rxij + ryij*ryij ) ;
+    vxij  = VX[i] - VX[j] ;
+    vyij  = VY[i] - VY[j] ;
+    
+    factor= ( rxij*vxij + ryij*vyij ) / d ;
+    cx    = factor*rxij/rij ;
+    cy    = factor*ryij/rij ;
+    
+    VX[i] += - cx ;
+    VX[j] += + cx ;
+    VY[i] += - cy ;
+    VY[j] += + cy ;
+}
 
 
 
