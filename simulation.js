@@ -202,7 +202,7 @@ function draw(){
 
 
 
-        var canvas = document.getElementById('tutorial');
+        var canvas = document.getElementById('drawView');
         if (canvas.getContext){
             var ctx = canvas.getContext('2d');
             //輪郭線による描画
