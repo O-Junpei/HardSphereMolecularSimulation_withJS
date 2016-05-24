@@ -67,7 +67,7 @@ function draw(){
     n = 36;
     
     //分子の面積分率(0.3で気相、0.5で液層、0.7で固層)
-    vdens  = 0.5;
+    vdens  = 0.7;
 
     //系の設定温度,T
     temp   = 5.0;
@@ -110,7 +110,7 @@ function draw(){
 
     //各々の分子の初期位置
     for (onoi = 1; onoi<=n; onoi ++) {
-      console.log('%d個目の初期位置:X:%lf Y=%lf \n',onoi,RX[onoi],RY[onoi]);
+      //console.log('%d個目の初期位置:X:%lf Y=%lf \n',onoi,RX[onoi],RY[onoi]);
     }
 
 
@@ -148,7 +148,7 @@ function draw(){
         tij = timbig ;
         
         for (onoi = 1; onoi <= coltim.length; onoi++) {
-            console.log("coltim[%d]の中身=%lf ",onoi,coltim[onoi]);
+            //console.log("coltim[%d]の中身=%lf ",onoi,coltim[onoi]);
         }
 
         for ( k=1 ; k<=n ; k++ ) {
@@ -167,8 +167,8 @@ function draw(){
             coltim[k] += - tstep ;
             RX[k]     += VX[k]*tstep ;
             RY[k]     += VY[k]*tstep ;
-            RX[k]     += - ( RX[k]/XL - 0.5 )*XL ;
-            RY[k]     += - ( RY[k]/YL - 0.5 )*YL ;
+            RX[k]     += - Math.floor( RX[k]/XL - 0.5 )*XL ;
+            RY[k]     += - Math.floor( RY[k]/YL - 0.5 )*YL ;
         }
         /*--- compute coll. dynamics ---*/
         bump( d, i, j ) ;
@@ -282,7 +282,7 @@ function iniposit(n, ndens ){
 
     //set mol. at close-packed lattice points(最密格子上に分子を設置する)
     a  = Math.sqrt(  (2/Math.sqrt(3))/ndens  ) ;
-    p  = Math.sqrt( n/4 );
+    p  = Math.floor(Math.sqrt( n/4 ));
     XL = Math.sqrt(3)*a*p;
     YL = 2*a*p ;
     
@@ -369,7 +369,7 @@ function collist(n, dsq, i, coltim, partnr ){
     
     timbig=10000000000 ;
     
-    console.log("渡された値,n=%f, dsp=%f,i=%f",n,dsq,i);
+    //console.log("渡された値,n=%f, dsp=%f,i=%f",n,dsq,i);
 
     coltim[i] = timbig ;  partnr[i] = n ;
     rxi = RX[i] ; ryi = RY[i] ;
@@ -378,10 +378,11 @@ function collist(n, dsq, i, coltim, partnr ){
     for ( j=1 ; j<=n ; j++ ) {
 
         if ( j == i )  continue ;
-        rxij = rxi - RX[j] ;
+        test = RX[j] ;
+        rxij = rxi - test;
         ryij = ryi - RY[j] ;
-        rxij = rxij - (rxij/XL)*XL ;
-        ryij = rxij - (ryij/YL)*YL ;
+        rxij = rxij - Math.floor(rxij/XL)*XL ;
+        ryij = rxij - Math.floor(ryij/YL)*YL ;
         vxij = vxi - VX[j] ;
         vyij = vyi - VY[j] ;
         bij  = rxij*vxij + ryij*vyij ;
@@ -411,8 +412,8 @@ function bump( d, i, j ){
     
     rxij  = RX[i] - RX[j] ;
     ryij  = RY[i] - RY[j] ;
-    rxij += -( rxij/XL)*XL ;
-    ryij += -( ryij/YL)*YL ;
+    rxij += - Math.floor( rxij/XL)*XL ;
+    ryij += - Math.floor( ryij/YL)*YL ;
     rij   = Math.sqrt( rxij*rxij + ryij*ryij ) ;
     vxij  = VX[i] - VX[j] ;
     vyij  = VY[i] - VY[j] ;
