@@ -21,6 +21,20 @@ var RAN;
 //NRAN:number of random numbers used(使用済みの乱数の数),IX:乱数の生成に使用する
 var NRAN, IX ;
 
+//粒子数
+var n;
+
+//各々の履歴が入る
+var positionHistory;
+
+
+
+
+//canvas
+var canvas;
+var ctx;
+
+var tempNumber;
 
 
 
@@ -32,7 +46,8 @@ function draw(){
     VY = new Array();
     RAN = new Array();
 
-    var n;
+    positionHistory = new Array();
+
     var partnr = new Array();
         var d;
         var ndens;
@@ -56,6 +71,7 @@ function draw(){
         var op;
         var inp;
         var onoi;
+
 
 
   //////////////////////////////////////////////////////////////
@@ -100,6 +116,18 @@ function draw(){
 
 
 
+  //canvasの設定
+  canvas = document.getElementById('drawView');
+  if (!canvas.getContext){
+    alert("fail to load");
+  }
+  ctx = new Array();
+
+  for (var i = 1; i < n; i++) {
+     ctx[i] = canvas.getContext('2d');
+  }
+
+
   //////////////////////////////////////////////////////////////
   //initial configuration(初期設定)
   //////////////////////////////////////////////////////////////
@@ -110,7 +138,7 @@ function draw(){
 
     //各々の分子の初期位置
     for (onoi = 1; onoi<=n; onoi ++) {
-      //console.log('%d個目の初期位置:X:%lf Y=%lf \n',onoi,RX[onoi],RY[onoi]);
+      console.log('%d個目の初期位置:X:%lf Y=%lf \n',onoi,RX[onoi],RY[onoi]);
     }
 
 
@@ -182,46 +210,115 @@ function draw(){
         }
         /*--- for data output ---*/
 
+        var principlePositions = new Array();
         for( k=1 ; k<=n ; k++ ) {
             var rxNcolAry = new Array();
             var ryNcolAry = new Array();
+            var positions = new Object();
             rxNcolAry[ncol] = RX[k];
             rx0[k] = rxNcolAry[ncol] ;
             ryNcolAry[ncol] = RX[k];
-            rx0[k] = ryNcolAry[ncol] ;
+            ry0[k] = ryNcolAry[ncol] ;
+
+            positions['x'] = RX[k];
+            positions['y'] = RY[k];
+
+            principlePositions[k] = positions;
             //console.log("あれ:X:%lf Y=%lf ",RX[k],RY[k]);
             //rx0[k][ncol] = RX[k] ;
             //ry0[k][ncol] = RY[k] ;
             
-            if (k == 3) {
-                console.log("3個目の分子の軌跡:X:%lf Y=%lf ",RX[k],RY[k]);
-            }
+
+            console.log("%d個目の分子の軌跡:X:%lf Y=%lf ",k,RX[k],RY[k]);
+                //setTimeout(aaa(RX[k],RY[k]), 3000);
             
         }
+        positionHistory[ncol] = principlePositions;
     }
 
+    tempNumber = 1;
+   // aaa();
+    console.log("positionHistory.length%d ",positionHistory.length);
+    console.log("positionHistory.length[1]%d ",positionHistory[1].length);
+    console.log("長さx%lf ",positionHistory[5][3]["x"]);
+    console.log("長さy%lf ",positionHistory[5][3]["y"]);
 
-
-        var canvas = document.getElementById('drawView');
-        if (canvas.getContext){
-            var ctx = canvas.getContext('2d');
             //輪郭線による描画
+            /*
             ctx.beginPath();
-            ctx.moveTo(50,50);
-            ctx.lineTo(360,200);
-            ctx.lineTo(140,250);
-            ctx.closePath();
-            ctx.stroke();
-
-            //塗り潰しによる描画
-            ctx.beginPath();
-            ctx.moveTo(50,250);
-            ctx.lineTo(160,20);
-            ctx.lineTo(340,50);
+            ctx.fillStyle = 'rgb(192, 80, 77)'; // 赤
+            ctx.arc(70, 70, 60, 0, Math.PI*2, false);
             ctx.closePath();
             ctx.fill();
-        }
+
+            ctx.clearRect(0, 0, 500, 500);
+
+            ctx.translate(70,70);
+
+
+            ctx.beginPath();
+            ctx.fillStyle = 'rgb(192, 80, 77)'; // 赤
+            ctx.arc(70, 70, 60, 0, Math.PI*2, false);
+            ctx.closePath();
+            ctx.fill();
+*/
+
+            //setTimeout(aaa, 1000);
+//showAllPrinciple();
+//ctx[n].clearRect(0, 0, 500, 500);
+
+　var count = 0;
+　var countup = function(){
+  ctx[1].clearRect(0, 0, 500, 500);
+  showAllPrinciple();
+　//　console.log(count++);
+　　setTimeout(countup, 1000);
+　} 
+　countup();
 }
+
+function showAllPrinciple(){
+
+    for (var i = 1; i < n; i++) {
+        showPrinciple(i);
+    }
+      tempNumber ++;
+}
+
+
+
+function showPrinciple(n){
+
+    console.log("tempNumber=%lf,n=%lf",tempNumber,n);
+    if (!positionHistory[tempNumber][n]["x"]) {
+        console.log("aaaaaaaaaaaaaaa");
+    }
+
+    if (!positionHistory[tempNumber][n]["y"]) {
+        console.log("aaaaaaaaaaaaaaa");
+    }
+
+    var x = positionHistory[tempNumber][n]["x"]*50;
+    var y = positionHistory[tempNumber][n]["y"]*50;
+   // x = 30;
+   // y = 30;
+  //ctx[n].clearRect(0, 0, 500, 500);
+  ctx[n].beginPath();
+  ctx[n].fillStyle = 'rgb(192, 80, 77)'; // 赤
+  ctx[n].arc(x, y, 5, 0, Math.PI*2, false);
+  ctx[n].closePath();
+  ctx[n].fill();
+  //ctx.translate(30,30);
+  //ctx.translate(-positionHistory[tempNumber][3]["x"]*10,-positionHistory[tempNumber][3]["y"]*10);
+
+
+  /*if (tempNumber < positionHistory.length) {
+    alert("aaa");
+    setTimeout(aaa(), 1000);
+
+  }*/
+}
+
 
 
 
