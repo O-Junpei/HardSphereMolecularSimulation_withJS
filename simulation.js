@@ -45,32 +45,12 @@ function draw(){
     VX = new Array();
     VY = new Array();
     RAN = new Array();
-
     positionHistory = new Array();
-
     var partnr = new Array();
-        var d;
-        var ndens;
-        var vdens;
-        var temp;
+        var d, ndens, vdens, temp, i, j, k, ii, ncol, ncolmx, nbump, op, inp, onoi, tstep, tij, tim, timbig, dsp;
         var coltim = new Array();
-        var tstep;
-        var tij;
-        var tim;
-        var timbig;
-        var dsp;
         var rx0 = new Array();
         var ry0 = new Array();
-        var i;
-        var j;
-        var k;
-        var ii;
-        var ncol;
-        var ncolmx;
-        var nbump;
-        var op;
-        var inp;
-        var onoi;
 
 
 
