@@ -12,15 +12,15 @@ var RX, RY;
 var VX, VY;
 
 //x- and y-length of simulation region(長方形シミュレーション領域のx,y成分)
-var XL, YL ;
-
+//var XL, YL ;
+/*
 //random number ( the range is from 0. to 1.0 )(0~1に分布する一様乱数列)
 var RAN;
 
 //NRAN:number of random numbers used(使用済みの乱数の数),IX:乱数の生成に使用する
 var NRAN, IX ;
-
-//粒子数
+*/
+//分子数
 var n;
 
 //各々の履歴が入る
@@ -28,85 +28,88 @@ var positionHistory;
 
 //canvas
 var canvas,ctx;
+
+//粒子の色の情報が入る配列
+var colors;
+
+
 var tempNumber;
 
 function draw(){
 
-    RX = new Array();
-    RY = new Array();
-    VX = new Array();
-    VY = new Array();
-    RAN = new Array();
-    positionHistory = new Array();
-    var partnr = new Array();
-    var d, ndens, vdens, temp, i, j, k, ii, ncol, ncolmx, nbump;
-    var op, inp, onoi, tstep, tij, tim, timbig, dsp;
-    var coltim = new Array();
-    var rx0 = new Array();
-    var ry0 = new Array();
+  //配列の初期化
+  generateAry();
 
-    //*---parameter (1)　---*/
-    //n:系の分子数を表す,n=16,36,64,100,144,196,256,324,400,484...
-    n = 36;
-    
-    //分子の面積分率(0.3で気相、0.5で液層、0.7で固層)
-    vdens  = 0.7;
-    //系の設定温度,T
-    temp   = 5.0;
-    //分子の直径
-    d      = 1.;
-    //分子の数密度
-    ndens  = vdens*(4./Math.PI) ;
-    //分子直径の二乗
-    dsq    = d*d ;
-    //
-    timbig = 1.e10 ;
-    
-    /*--- parameter (2) ---*/
-    ncolmx =  500 ;
-    inp    = 0 ;
-    /*--- parameter (3) ---*/
-    IX     = 0 ;
-    
-    rancal() ;
-    NRAN   = 1 ;
+  //乱数生成
+  rancal();
 
-  //canvasの設定
-  canvas = document.getElementById('drawView');
-  if (!canvas.getContext){
-    alert("fail to load");
-  }
-  ctx = new Array();
+  //---parameter (1)　---
+  //n:系の分子数を表す,n=16,36,64,100,144,196,256,324,400,484...
+  n = 36;
+ 
 
-  for (var i = 1; i < n; i++) {
-     ctx[i] = canvas.getContext('2d');
-  }
+  //canvas関連の初期設定
+  setCanvas() ;
 
-　　/*--- initial configuration(初期設定) ---*/
+  //canvasに枠を作成する。
+  makeFrame();
+
+  //粒子用の色を作成
+  makeColors();
+
+
+　　//--- initial configuration(初期設定) ---//
   //set initial positions(初期位置の指定)
-  iniposit( n, ndens ) ;
+  iniposit(n) ;
 
   // set initial velocities (初期速度の設定)
-  inivel( n, temp ) ;
+  inivel(n) ;
 
-  //各々の分子の初期速度
+  showPrinciple(0);
 
-  //scale velocities(系の分子数が合うようにスケーリングする)
-  scalevel( n, temp ) ;
+
+  //ctx[0].clearRect(0, 0, 500, 500);
+
+
+
+  var count = 1;
+  var countup = function(){
+  
+    //消して枠を作る
+    ctx[0].clearRect(0, 0, 500, 500);
+    makeFrame();
+    calcPositions(count);
+    showPrinciple(count);
+    count ++;
+  　 setTimeout(countup, 1000);
+　 } 
+　 countup();
+
+
+
+
+  // cal collision time for each moledcule(衝突するまでの時間を求める)
+  /*
+  for( i=1 ; i<=n ; i++ ) {
+    collist( n, dsq, i, coltim, partnr ) ;
+  }
+}\
+
+
 
   // cal collision time for each moledcule(衝突するまでの時間を求める)
   for( i=1 ; i<=n ; i++ ) {
     collist( n, dsq, i, coltim, partnr ) ;
   }
 
-  /*--- initialization ---*/
+  //--- initialization ---//
   tim   = 0. ; nbump = 0  ;
 
-　　/*----------------------    equilibration   ----------------------*/
+　　//----------------------    equilibration   ----------------------//
 
     
 　　for ( ncol=1 ; ncol<=ncolmx ; ncol++ ) {
-    /*--- locate minimum collision time ---*/
+    //--- locate minimum collision time ---//
     tij = timbig ;
     for ( k=1 ; k<=n ; k++ ) {
       if ( coltim[k] < tij ) {
@@ -114,13 +117,13 @@ function draw(){
           i  = k ;
         }
       }
-    /*--- coll. for i and j ---*/
+    //--- coll. for i and j ---//
     tstep  = tij ;
     j      = partnr[i] ;
     tim   += tstep ;
     nbump +=  1 ;
 
-    /*--- advance particle position ---*/
+    //--- advance particle position ---//
     for ( k=1 ; k<=n ; k++ ) {
       coltim[k] += - tstep ;
       RX[k]     += VX[k]*tstep ;
@@ -128,17 +131,17 @@ function draw(){
       RX[k]     += - Math.floor( RX[k]/XL - 0.5 )*XL ;
       RY[k]     += - Math.floor( RY[k]/YL - 0.5 )*YL ;
     }
-    /*--- compute coll. dynamics ---*/
+    //--- compute coll. dynamics ---//
     bump( d, i, j ) ;
-    /*---  for those mol. whose pointers ---*/
-    /*---     are i-th or j-th mol.      ---*/
+    //---  for those mol. whose pointers ---//
+    //---     are i-th or j-th mol.      ---//
     collist( n, dsq, i, coltim, partnr ) ;
     collist( n, dsq, j, coltim, partnr ) ;
     for( k=1 ; k<=n ; k++ ) {
       if( (partnr[k] == i) || (partnr[k] == j) )
         collist( n, dsq, k, coltim, partnr ) ;
     }
-    /*--- for data output ---*/
+    //--- for data output ---//
 
     var principlePositions = new Array();
     for( k=1 ; k<=n ; k++ ) {
@@ -157,39 +160,86 @@ function draw(){
     positionHistory[ncol] = principlePositions;
   }
 
-  tempNumber = 1;
-  var count = 0;
-  var countup = function(){
-  ctx[1].clearRect(0, 0, 500, 500);
-  showAllPrinciple();
-　 setTimeout(countup, 1000);
-　 } 
-　  countup();
+*/
 }
 
+
+function generateAry(){
+  RX = new Array();
+  RY = new Array();
+  VX = new Array();
+  VY = new Array();
+  positionHistory = new Array();
+  ctx = new Array();
+  colors = new Array();
+}
+
+
+
+function setCanvas(){
+  //canvasの設定
+  canvas = document.getElementById('drawView');
+  if (!canvas.getContext){
+    alert("fail to load");
+  }
+  for (var i = 0; i < n; i++) {
+    ctx[i] = canvas.getContext('2d');
+  }
+}
+
+function makeFrame(){
+  var frames = canvas.getContext('2d');
+  frames.beginPath();
+  frames.fillRect(0, 0, 500, 5);
+  frames.fillRect(0, 0, 5, 500);
+  frames.fillRect(0, 495, 500, 5);
+  frames.fillRect(495, 0, 5, 500);
+}
+
+function makeColors(){
+  for (var i = 0; i < n; i++) {
+    var red = Math.round(Math.random() * 255);
+    var redStr = String(red);
+    var green = Math.round(Math.random() * 255);
+    var greenStr = String(green);
+    var blue = Math.round(Math.random() * 255);
+    var blueStr = String(blue);
+    var color = "rgb(" + red +"," + greenStr + "," + blueStr+")";
+    colors[i] = color;
+    console.log("%s" , color);
+  }
+}
+
+
+
+/*
 function showAllPrinciple(){
     for (var i = 1; i < n; i++) {
         showPrinciple(i);
     }
       tempNumber ++;
 }
+*/
+function showPrinciple(t){
 
-function showPrinciple(n){
-  var x = positionHistory[tempNumber][n]["x"]*50;
-  var y = positionHistory[tempNumber][n]["y"]*50;
+  for (var i = 0; i < n; i++) {
 
-  ctx[n].beginPath();
-  ctx[n].fillStyle = 'rgb(192, 80, 77)'; // 赤
-  ctx[n].arc(x, y, 5, 0, Math.PI*2, false);
-  ctx[n].closePath();
-  ctx[n].fill();
+    var x = positionHistory[t][i]["x"];
+    var y = positionHistory[t][i]["y"];
+
+    ctx[i].beginPath();
+    ctx[i].arc(x, y, 5, 0, Math.PI*2, false);
+    ctx[i].fillStyle = colors[i];
+    ctx[i].closePath();
+    ctx[i].fill();
+  }
 }
 
-/*+++ fun scalevel +++*/
+//+++ fun scalevel +++//
 function scalevel(n, temp ){
   var  vxi, vyi, velx, vely, tx, ty, t ;
   var  c1 ,i;
-  /*--- zero total momentum ---*/
+  //--- zero total momentum ---//
   velx = 0. ;  vely = 0. ;
   for( i=1 ; i<=n ; i++ ) {
     vxi   = VX[i] ;
@@ -204,8 +254,8 @@ function scalevel(n, temp ){
     VX[i] += - velx ;
     VY[i] += - vely ;
   }
-  /*--- correct velocities to satisfy ---*/
-  /*-   specified temperature           -*/
+  //--- correct velocities to satisfy ---//
+  //-   specified temperature           -//
   tx = 0. ; ty = 0. ;
   for ( i=1 ; i<=n ; i++ ) {
     vxi  = VX[i] ;
@@ -227,52 +277,53 @@ function scalevel(n, temp ){
 
 
 //初期位置を設定する
-function iniposit(n, ndens ){
-    var  rxi, ryi, rx0, ry0, a , ax , ay , c1 ;
-    var     i , j , kx , ky , k  , p , iface ;
+function iniposit(n){
 
-    //set mol. at close-packed lattice points(最密格子上に分子を設置する)
-    a  = Math.sqrt(  (2/Math.sqrt(3))/ndens  ) ;
-    p  = Math.floor(Math.sqrt( n/4 ));
-    XL = Math.sqrt(3)*a*p;
-    YL = 2*a*p ;
-    ax = Math.sqrt(3)*a ;
-    ay   =  2.*a ;
-    kx = p ; ky = p ;
-    c1 = 0.01 ;
-    
-    // set initial position(初期位置の設定)
-    k    =  0 ;
-    for ( iface=1 ; iface<=4 ; iface++ ) {
-        if( iface == 1 ) {
-            rx0 = c1 ; ry0 = c1 ;
-        } else if( iface == 2 ) {
-            rx0 = c1 ; ry0 = a + c1 ;
-        } else if( iface == 3 ) {
-            rx0 = ax/2. + c1  ;
-            ry0 = a/2.  + c1  ;
-        } else {
-            rx0 = ax/2. + c1  ;
-            ry0 = a*3./2. + c1 ;
-        }
-        for( j=0 ; j<=ky-1 ; j++ ) {
-            ryi = j*ay + ry0 ;
-            if ( ryi >= YL )    break ;
-            for ( i=0 ; i<=kx-1 ; i++ ) {
-                rxi = i*ax + rx0 ;
-                if ( rxi >= XL )  break ;
-                
-                k += 1 ;
-                RX[k]   =  rxi ;
-                RY[k]   =  ryi ;
-            }
-        }
-    }
+  var firstDistance = 500 / (Math.sqrt(n)+1);
+
+  //X軸方向の初期位置指定
+  for (var i = 0; i < n; i++) {
+    RX[i] = Math.floor(i / Math.sqrt(n))*firstDistance + firstDistance;
+  }
+
+  //Y軸方向の初期位置指定
+  for (i = 0; i < n; i++) {
+    RY[i] = Math.floor(i % Math.sqrt(n))*firstDistance + firstDistance;
+  }
+
+  for (var i = 0; i < n; i++) {
+    console.log("RX[%d]=:%f,RY[%d]=:%f" , i, RX[i] , i, RY[i]);
+  }
+
+  var positions = new Array();
+  for (var i = 0; i < n; i++) {
+    position = new Object();
+    position['x'] = RX[i];
+    position['y'] = RY[i];
+    positions[i] = position;
+  }
+
+  positionHistory[0] = positions;
+  //console.log("%f" , positionHistory[0][1]['y']);
 }
 
 
 // fun inivel初期速度の設定
-function inivel(n, temp ){
+function inivel(n){
+
+  //ボックスミュラー法によるガウス関数分布乱数の生成
+
+  for (var i = 0; i < n; i++) {
+    var x = Math.random();
+    var y = Math.random();
+
+    VX[i] = Math.sqrt(-Math.log(x)) * Math.cos(2*Math.PI*y);
+    VY[i] = Math.sqrt(-Math.log(x)) * Math.sin(2*Math.PI*y);
+  }
+
+
+
+  /*
     var     i ;
     var  c0 , c1 , c2 , c3 , t , vxi , vyi ;
     
@@ -294,11 +345,34 @@ function inivel(n, temp ){
       };
       VX[i] = vxi ;
       VY[i] = vyi ;
-    }
+    }*/
+
+}
+
+//tから1秒後の位置を求める
+function calcPositions(t){
+  var positions = new Array();
+
+  for (var i = 0; i < n; i++) {
+    var xNew = positionHistory[(t-1)][i]["x"] + VX[i];
+    var yNew = positionHistory[(t-1)][i]["y"] + VY[i];
+
+    position = new Object();
+    position['x'] = xNew;
+    position['y'] = yNew;
+    positions[i] = position;
+  }
+
+  positionHistory[t] = positions;
+
+  console.log("%f" , positionHistory[t][0]['x']);
+
 }
 
 
-/*+++ fun collist +++*/
+
+
+//+++ fun collist +++//
 function collist(n, dsq, i, coltim, partnr ){
     var  rxi, ryi, rxij, ryij ;
     var  vxi, vyi, vxij, vyij ;
@@ -340,7 +414,7 @@ function collist(n, dsq, i, coltim, partnr ){
 }
 
 
-/*+++ fun bump +++*/
+//+++ fun bump +++//
 function bump( d, i, j ){
     var  rxij , ryij , vxij , vyij , rij , factor ;
     var  cx   , cy ;
@@ -364,9 +438,9 @@ function bump( d, i, j ){
 }
 
 
-/*--- rancal ---*/
+//--- rancal ---//
 function rancal(){
     for (i=1 ; i<NRANMX ; i++ ) {
-        RAN[i] = Math.random() 
+        //RAN[i] = Math.random() 
     }
 }

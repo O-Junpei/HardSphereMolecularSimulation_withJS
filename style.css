@@ -1,7 +1,5 @@
 @charset "UTF-8";
 
-#tutorial{
-  margin: 0 auto;
-  width = 450;
-  height= 300;
+#drawView{
+  background-color: red;
 }
