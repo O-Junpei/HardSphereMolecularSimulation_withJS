@@ -1,9 +1,11 @@
-//define
-const NN = 201;
+//系の分子数,n=16,36,64,100,144,196,256,324,400,484...
+const PRINCIPLE_NUMBER = 36;
 
-//衝突数の設定
-const NNCOLMX = 2001;
-const NRANMX = 100001;
+//系の温度
+const SYSTEM_TEMP = 3;
+
+//系の一片の長さ
+const SYSTEM_LENGTH = 500;
 
 //positions of molecules(分子iの位置ベクトルのx,y成分)
 var RX, RY;
@@ -11,42 +13,33 @@ var RX, RY;
 //velocities of molecules(分子iの速度ベクトルのx,y成分)
 var VX, VY;
 
-//x- and y-length of simulation region(長方形シミュレーション領域のx,y成分)
-//var XL, YL ;
-/*
-//random number ( the range is from 0. to 1.0 )(0~1に分布する一様乱数列)
-var RAN;
 
-//NRAN:number of random numbers used(使用済みの乱数の数),IX:乱数の生成に使用する
-var NRAN, IX ;
-*/
 //分子数
 var n;
 
+//系の温度
+var temperature;
 //各々の履歴が入る
 var positionHistory;
 
 //canvas
-var canvas,ctx;
+var canvas,ctx,canvasClear;
 
 //粒子の色の情報が入る配列
 var colors;
 
-
-var tempNumber;
 
 function draw(){
 
   //配列の初期化
   generateAry();
 
-  //乱数生成
-  rancal();
-
   //---parameter (1)　---
-  //n:系の分子数を表す,n=16,36,64,100,144,196,256,324,400,484...
-  n = 36;
+  //n:系の分子数
+  n = PRINCIPLE_NUMBER;
  
+  //系の温度
+  temperature = SYSTEM_TEMP;
 
   //canvas関連の初期設定
   setCanvas() ;
@@ -63,20 +56,16 @@ function draw(){
   iniposit(n) ;
 
   // set initial velocities (初期速度の設定)
-  inivel(n) ;
+  inivel(n,temperature) ;
 
   showPrinciple(0);
 
-
-  //ctx[0].clearRect(0, 0, 500, 500);
-
-
-
+  //繰り返し処理
   var count = 1;
   var countup = function(){
   
     //消して枠を作る
-    ctx[0].clearRect(0, 0, 500, 500);
+    canvasClear.clearRect(0, 0, 500, 500);
     makeFrame();
     calcPositions(count);
     showPrinciple(count);
@@ -85,82 +74,6 @@ function draw(){
 　 } 
 　 countup();
 
-
-
-
-  // cal collision time for each moledcule(衝突するまでの時間を求める)
-  /*
-  for( i=1 ; i<=n ; i++ ) {
-    collist( n, dsq, i, coltim, partnr ) ;
-  }
-}\
-
-
-
-  // cal collision time for each moledcule(衝突するまでの時間を求める)
-  for( i=1 ; i<=n ; i++ ) {
-    collist( n, dsq, i, coltim, partnr ) ;
-  }
-
-  //--- initialization ---//
-  tim   = 0. ; nbump = 0  ;
-
-　　//----------------------    equilibration   ----------------------//
-
-    
-　　for ( ncol=1 ; ncol<=ncolmx ; ncol++ ) {
-    //--- locate minimum collision time ---//
-    tij = timbig ;
-    for ( k=1 ; k<=n ; k++ ) {
-      if ( coltim[k] < tij ) {
-        tij = coltim[k] ;
-          i  = k ;
-        }
-      }
-    //--- coll. for i and j ---//
-    tstep  = tij ;
-    j      = partnr[i] ;
-    tim   += tstep ;
-    nbump +=  1 ;
-
-    //--- advance particle position ---//
-    for ( k=1 ; k<=n ; k++ ) {
-      coltim[k] += - tstep ;
-      RX[k]     += VX[k]*tstep ;
-      RY[k]     += VY[k]*tstep ;
-      RX[k]     += - Math.floor( RX[k]/XL - 0.5 )*XL ;
-      RY[k]     += - Math.floor( RY[k]/YL - 0.5 )*YL ;
-    }
-    //--- compute coll. dynamics ---//
-    bump( d, i, j ) ;
-    //---  for those mol. whose pointers ---//
-    //---     are i-th or j-th mol.      ---//
-    collist( n, dsq, i, coltim, partnr ) ;
-    collist( n, dsq, j, coltim, partnr ) ;
-    for( k=1 ; k<=n ; k++ ) {
-      if( (partnr[k] == i) || (partnr[k] == j) )
-        collist( n, dsq, k, coltim, partnr ) ;
-    }
-    //--- for data output ---//
-
-    var principlePositions = new Array();
-    for( k=1 ; k<=n ; k++ ) {
-      var rxNcolAry = new Array();
-      var ryNcolAry = new Array();
-      var positions = new Object();
-      rxNcolAry[ncol] = RX[k];
-      rx0[k] = rxNcolAry[ncol] ;
-      ryNcolAry[ncol] = RX[k];
-      ry0[k] = ryNcolAry[ncol] ;
-
-      positions['x'] = RX[k];
-      positions['y'] = RY[k];
-      principlePositions[k] = positions;
-    }
-    positionHistory[ncol] = principlePositions;
-  }
-
-*/
 }
 
 
@@ -185,6 +98,7 @@ function setCanvas(){
   for (var i = 0; i < n; i++) {
     ctx[i] = canvas.getContext('2d');
   }
+  canvasClear = canvas.getContext('2d');
 }
 
 function makeFrame(){
@@ -210,16 +124,6 @@ function makeColors(){
   }
 }
 
-
-
-/*
-function showAllPrinciple(){
-    for (var i = 1; i < n; i++) {
-        showPrinciple(i);
-    }
-      tempNumber ++;
-}
-*/
 function showPrinciple(t){
 
   for (var i = 0; i < n; i++) {
@@ -279,7 +183,7 @@ function scalevel(n, temp ){
 //初期位置を設定する
 function iniposit(n){
 
-  var firstDistance = 500 / (Math.sqrt(n)+1);
+  var firstDistance = SYSTEM_LENGTH / (Math.sqrt(n)+1);
 
   //X軸方向の初期位置指定
   for (var i = 0; i < n; i++) {
@@ -309,44 +213,27 @@ function iniposit(n){
 
 
 // fun inivel初期速度の設定
-function inivel(n){
+function inivel(n,temperature){
 
   //ボックスミュラー法によるガウス関数分布乱数の生成
-
-  for (var i = 0; i < n; i++) {
-    var x = Math.random();
-    var y = Math.random();
-
-    VX[i] = Math.sqrt(-Math.log(x)) * Math.cos(2*Math.PI*y);
-    VY[i] = Math.sqrt(-Math.log(x)) * Math.sin(2*Math.PI*y);
-  }
-
-
-
-  /*
-    var     i ;
-    var  c0 , c1 , c2 , c3 , t , vxi , vyi ;
+    var vxi , vyi, velLimit;
     
-    c0 = 2*Math.PI ;
-    c3 = temp*3.5*3.5 ;
-    t  = temp ;
+    velLimit = temperature * SYSTEM_LENGTH/10 ;
     
-    for ( i=1 ; i<=n ; i++ ) {
-      NRAN += 1  ;
-      c1    =  Math.sqrt(-2*t*Math.log( RAN[NRAN]));
-      NRAN += 1 ;
-      c2    = c0*( RAN[NRAN] ) ;
-      vxi   = c1*Math.cos(c2) ;
-      vyi   = c1*Math.sin(c2) ;
+    for (var i=0 ; i<n ; i++ ) {
+
+      vxi   = Math.sqrt(-2*temperature*Math.log( Math.random()))*Math.cos(2*Math.PI*( Math.random() )) ;
+      vyi   = Math.sqrt(-2*temperature*Math.log( Math.random()))*Math.sin(2*Math.PI*( Math.random() )) ;
         
-      if( (vxi*vxi+vyi*vyi) >= c3 ){
+      //画面サイズから大きく外れる速度の粒子は再計算する
+      if( (vxi*vxi+vyi*vyi) >= velLimit ){
         i--; 
         continue;
       };
+
       VX[i] = vxi ;
       VY[i] = vyi ;
-    }*/
-
+    }
 }
 
 //tから1秒後の位置を求める
@@ -364,83 +251,5 @@ function calcPositions(t){
   }
 
   positionHistory[t] = positions;
-
-  console.log("%f" , positionHistory[t][0]['x']);
-
 }
 
-
-
-
-//+++ fun collist +++//
-function collist(n, dsq, i, coltim, partnr ){
-    var  rxi, ryi, rxij, ryij ;
-    var  vxi, vyi, vxij, vyij ;
-    var  rijsq, vijsq, bij, tij, discr ;
-    var  timbig ,j;
-    
-    timbig=10000000000 ;
-
-    coltim[i] = timbig ;  partnr[i] = n ;
-    rxi = RX[i] ; ryi = RY[i] ;
-    vxi = VX[i] ; vyi = VY[i] ;
-    
-    for ( j=1 ; j<=n ; j++ ) {
-      if ( j == i )  continue ;
-      test = RX[j] ;
-      rxij = rxi - test;
-      ryij = ryi - RY[j] ;
-      rxij = rxij - Math.floor(rxij/XL)*XL ;
-      ryij = rxij - Math.floor(ryij/YL)*YL ;
-      vxij = vxi - VX[j] ;
-      vyij = vyi - VY[j] ;
-      bij  = rxij*vxij + ryij*vyij ;
-        
-      if( bij < 0 ) {
-        rijsq = rxij*rxij + ryij*ryij ;
-        vijsq = vxij*vxij + vyij*vyij ;
-        discr = bij*bij - vijsq*( rijsq-dsq ) ;
-        if( discr > 0 ) {
-          tij = (-bij - Math.sqrt(discr) )/vijsq ;
-          if( tij < coltim[i] ) {
-          coltim[i] = tij ;
-          partnr[i] = j ;
-          }
-        }
-      }
-      coltim[j] = j ;
-      partnr[j] = j ;
-    }
-}
-
-
-//+++ fun bump +++//
-function bump( d, i, j ){
-    var  rxij , ryij , vxij , vyij , rij , factor ;
-    var  cx   , cy ;
-    
-    rxij  = RX[i] - RX[j] ;
-    ryij  = RY[i] - RY[j] ;
-    rxij += - Math.floor( rxij/XL)*XL ;
-    ryij += - Math.floor( ryij/YL)*YL ;
-    rij   = Math.sqrt( rxij*rxij + ryij*ryij ) ;
-    vxij  = VX[i] - VX[j] ;
-    vyij  = VY[i] - VY[j] ;
-    
-    factor= ( rxij*vxij + ryij*vyij ) / d ;
-    cx    = factor*rxij/rij ;
-    cy    = factor*ryij/rij ;
-    
-    VX[i] += - cx ;
-    VX[j] += + cx ;
-    VY[i] += - cy ;
-    VY[j] += + cy ;
-}
-
-
-//--- rancal ---//
-function rancal(){
-    for (i=1 ; i<NRANMX ; i++ ) {
-        //RAN[i] = Math.random() 
-    }
-}
