@@ -2,7 +2,7 @@
 const PRINCIPLE_NUMBER = 36;
 
 //系の温度
-const SYSTEM_TEMP = 3;
+const SYSTEM_TEMP = 300;
 
 //系の一片の長さ
 const SYSTEM_LENGTH = 500;
@@ -138,47 +138,6 @@ function showPrinciple(t){
     ctx[i].fill();
   }
 }
-
-//+++ fun scalevel +++//
-function scalevel(n, temp ){
-  var  vxi, vyi, velx, vely, tx, ty, t ;
-  var  c1 ,i;
-  //--- zero total momentum ---//
-  velx = 0. ;  vely = 0. ;
-  for( i=1 ; i<=n ; i++ ) {
-    vxi   = VX[i] ;
-    vyi   = VY[i] ;
-    velx += vxi ;
-    vely += vyi ;
-  }
-  velx = velx/n ;
-  vely = vely/n ;
-    
-  for( i=1 ; i<=n ; i++ ) {
-    VX[i] += - velx ;
-    VY[i] += - vely ;
-  }
-  //--- correct velocities to satisfy ---//
-  //-   specified temperature           -//
-  tx = 0. ; ty = 0. ;
-  for ( i=1 ; i<=n ; i++ ) {
-    vxi  = VX[i] ;
-    vyi  = VY[i] ;
-    tx += vxi*vxi ;
-    ty += vyi*vyi ;
-  }
-    tx = tx/n ;
-    ty = ty/n ;
-    t = ( tx + ty )/2. ;
-    c1 = Math.sqrt( temp/t) ;
-    for ( i=1 ; i<=n ; i++ ) {
-        vxi   = VX[i] ;
-        vyi   = VY[i] ;
-        VX[i] *= c1 ;
-        VX[i] *= c1 ;
-    }
-}
-
 
 //初期位置を設定する
 function iniposit(n){
